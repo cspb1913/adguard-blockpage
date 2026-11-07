@@ -23,6 +23,7 @@ Standard library only. Configuration comes from the environment:
 from __future__ import annotations
 
 import base64
+import ipaddress
 import json
 import os
 import re
@@ -224,10 +225,13 @@ def make_handler(client: AdGuardClient | None, trust_proxy: bool, proxy_ips: fro
             # Only a listed proxy may name the client, and only its own entry
             # (the rightmost) counts: earlier entries come from the client.
             if trust_proxy and peer in proxy_ips:
-                fwd = self.headers.get("X-Forwarded-For", "")
-                last = fwd.split(",")[-1].strip() if fwd else ""
-                if last:
-                    return last
+                # A proxy may append its own header line, so read them all.
+                fwd = ",".join(self.headers.get_all("X-Forwarded-For") or [])
+                last = fwd.split(",")[-1].strip()
+                try:
+                    return str(ipaddress.ip_address(last))
+                except ValueError:
+                    pass
             return peer
 
         def _send(self, status: int, body: bytes, content_type: str, cache: str = "no-store"):

@@ -1,4 +1,5 @@
 import base64
+import http.client
 import json
 import sys
 import threading
@@ -174,6 +175,25 @@ class BlockPageTest(unittest.TestCase):
         _, _, body = self.get(self.proxied, server.INFO_PATH, "bet.example",
                               {"X-Forwarded-For": "10.0.0.66, 10.116.192.50"})
         self.assertEqual(json.loads(body)["clientIp"], "10.116.192.50")
+
+    def raw_info(self, srv, xff_lines):
+        conn = http.client.HTTPConnection("127.0.0.1", srv.server_port)
+        conn.putrequest("GET", server.INFO_PATH, skip_host=True)
+        conn.putheader("Host", "bet.example")
+        for line in xff_lines:
+            conn.putheader("X-Forwarded-For", line)
+        conn.endheaders()
+        body = json.loads(conn.getresponse().read())
+        conn.close()
+        return body
+
+    def test_forwarded_for_reads_every_header_line(self):
+        d = self.raw_info(self.proxied, ["10.0.0.66", "10.116.192.50"])
+        self.assertEqual(d["clientIp"], "10.116.192.50")
+
+    def test_forwarded_for_must_be_an_ip(self):
+        d = self.raw_info(self.proxied, ["not-an-ip"])
+        self.assertEqual(d["clientIp"], "127.0.0.1")
 
     def test_forwarded_for_ignored_from_unlisted_peer(self):
         _, _, body = self.get(self.untrusted_proxy, server.INFO_PATH, "bet.example",
