@@ -84,14 +84,16 @@ class BlockPageTest(unittest.TestCase):
         bad = server.AdGuardClient(f"http://127.0.0.1:{cls.agh.server_port}", "admin", "wrong")
         cls.badpage = serve(server.make_handler(bad, trust_proxy=False))
         cls.unconfigured = serve(server.make_handler(None, trust_proxy=False))
+        cls.proxied = serve(server.make_handler(None, trust_proxy=True))
+        cls.untrusted_proxy = serve(server.make_handler(None, trust_proxy=True, proxy_ips=frozenset({"10.9.9.9"})))
 
     @classmethod
     def tearDownClass(cls):
-        for s in (cls.agh, cls.page, cls.badpage, cls.unconfigured):
+        for s in (cls.agh, cls.page, cls.badpage, cls.unconfigured, cls.proxied, cls.untrusted_proxy):
             s.shutdown()
 
-    def get(self, srv, path, host):
-        req = urllib.request.Request(f"http://127.0.0.1:{srv.server_port}{path}", headers={"Host": host})
+    def get(self, srv, path, host, headers=None):
+        req = urllib.request.Request(f"http://127.0.0.1:{srv.server_port}{path}", headers={"Host": host, **(headers or {})})
         try:
             with urllib.request.urlopen(req) as r:
                 return r.status, r.headers, r.read()
@@ -167,6 +169,20 @@ class BlockPageTest(unittest.TestCase):
         d = self.info("bet.example", self.unconfigured)
         self.assertEqual(d["host"], "bet.example")
         self.assertEqual(d["error"], "lookup_unconfigured")
+
+    def test_forwarded_for_uses_the_proxys_own_entry(self):
+        _, _, body = self.get(self.proxied, server.INFO_PATH, "bet.example",
+                              {"X-Forwarded-For": "10.0.0.66, 10.116.192.50"})
+        self.assertEqual(json.loads(body)["clientIp"], "10.116.192.50")
+
+    def test_forwarded_for_ignored_from_unlisted_peer(self):
+        _, _, body = self.get(self.untrusted_proxy, server.INFO_PATH, "bet.example",
+                              {"X-Forwarded-For": "10.0.0.66"})
+        self.assertEqual(json.loads(body)["clientIp"], "127.0.0.1")
+
+    def test_forwarded_for_ignored_when_proxy_trust_off(self):
+        _, _, body = self.get(self.page, server.INFO_PATH, "bet.example", {"X-Forwarded-For": "10.0.0.66"})
+        self.assertEqual(json.loads(body)["clientIp"], "127.0.0.1")
 
     def test_invalid_host_header_is_not_looked_up(self):
         before = len(FakeAdGuard.seen)

@@ -16,6 +16,8 @@ Standard library only. Configuration comes from the environment:
   ADGUARD_PASSWORD_FILE  alternative to ADGUARD_PASSWORD
   BLOCKPAGE_LISTEN   host:port to bind (default 0.0.0.0:8080)
   BLOCKPAGE_TRUST_PROXY  "1" to take the client IP from X-Forwarded-For
+  BLOCKPAGE_PROXY_IPS    comma-separated proxy IPs allowed to set it
+                         (default 127.0.0.1,::1)
 """
 
 from __future__ import annotations
@@ -201,10 +203,13 @@ def load_config() -> dict:
         "password": password,
         "listen": os.environ.get("BLOCKPAGE_LISTEN", "0.0.0.0:8080"),
         "trust_proxy": os.environ.get("BLOCKPAGE_TRUST_PROXY") == "1",
+        "proxy_ips": frozenset(
+            ip.strip() for ip in os.environ.get("BLOCKPAGE_PROXY_IPS", "127.0.0.1,::1").split(",") if ip.strip()
+        ),
     }
 
 
-def make_handler(client: AdGuardClient | None, trust_proxy: bool):
+def make_handler(client: AdGuardClient | None, trust_proxy: bool, proxy_ips: frozenset[str] = frozenset({"127.0.0.1", "::1"})):
     page = (PUBLIC_DIR / "index.html").read_bytes()
 
     class Handler(BaseHTTPRequestHandler):
@@ -215,11 +220,15 @@ def make_handler(client: AdGuardClient | None, trust_proxy: bool):
             sys.stderr.write(f"{self.address_string()} {self.command} {self.headers.get('Host', '-')!r}\n")
 
         def _client_ip(self) -> str:
-            if trust_proxy:
+            peer = self.client_address[0]
+            # Only a listed proxy may name the client, and only its own entry
+            # (the rightmost) counts: earlier entries come from the client.
+            if trust_proxy and peer in proxy_ips:
                 fwd = self.headers.get("X-Forwarded-For", "")
-                if fwd:
-                    return fwd.split(",")[0].strip()
-            return self.client_address[0]
+                last = fwd.split(",")[-1].strip() if fwd else ""
+                if last:
+                    return last
+            return peer
 
         def _send(self, status: int, body: bytes, content_type: str, cache: str = "no-store"):
             self.send_response(status)
@@ -279,7 +288,7 @@ def main() -> None:
     else:
         sys.stderr.write("ADGUARD_USER/ADGUARD_PASSWORD not set: block details will be unavailable\n")
     bind_host, _, port = cfg["listen"].rpartition(":")
-    httpd = ThreadingHTTPServer((bind_host or "0.0.0.0", int(port)), make_handler(client, cfg["trust_proxy"]))
+    httpd = ThreadingHTTPServer((bind_host or "0.0.0.0", int(port)), make_handler(client, cfg["trust_proxy"], cfg["proxy_ips"]))
     sys.stderr.write(f"block page listening on {cfg['listen']}\n")
     httpd.serve_forever()
 

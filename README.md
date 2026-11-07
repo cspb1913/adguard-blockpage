@@ -64,6 +64,7 @@ proxy with a school CA installed on every device.
 | `ADGUARD_PASSWORD` / `ADGUARD_PASSWORD_FILE` | | Its password, never logged |
 | `BLOCKPAGE_LISTEN` | `0.0.0.0:8080` | Bind address |
 | `BLOCKPAGE_TRUST_PROXY` | `0` | `1` to read the client IP from `X-Forwarded-For` |
+| `BLOCKPAGE_PROXY_IPS` | `127.0.0.1,::1` | Proxies allowed to set it; only their rightmost entry is used |
 
 AdGuard has no read-only role, so give the block page its own AdGuard user
 (`users:` in `AdGuardHome.yaml`) rather than the admin account, and keep the
