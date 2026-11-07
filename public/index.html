@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Site blocked · CSPB</title>
+  <link rel="icon" href="/__blockpage/cspb-logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Tokens mirror cspb-sis DESIGN.md / ui/src/index.css (moss, gold, cream). */
+    :root {
+      --moss-50: #f2f5f2; --moss-100: #e0e7e0; --moss-500: #5a7a5a; --moss-600: #476347;
+      --moss-800: #2f402f; --moss-900: #273427;
+      --gold-50: #fdf8e9; --gold-500: #d4a853; --gold-700: #936f22;
+      --cream-50: #fdfcfa; --cream-100: #f8f6f0; --cream-200: #f0ebe0; --cream-300: #e3dac5;
+      --surface: #ffffff;
+      --danger: #ef4444; --danger-50: #fef2f2; --danger-700: #b91c1c;
+      --sans: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --serif: 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif;
+      --mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Monaco, 'Courier New', monospace;
+      --r-control: 0.375rem; --r-action: 0.5rem; --r-container: 0.75rem; --r-pill: 9999px;
+      color-scheme: light;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; min-height: 100vh; background: var(--cream-100); color: var(--moss-900);
+      font-family: var(--sans); font-size: 1rem; line-height: 1.5;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 1.5rem 1rem;
+    }
+    @media (min-width: 640px) { body { padding: 3rem 1.5rem; } }
+    :focus-visible { outline: 2px solid var(--gold-500); outline-offset: 2px; }
+
+    .card {
+      width: 100%; max-width: 38rem; background: var(--surface);
+      border: 1px solid var(--cream-300); border-radius: var(--r-container);
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); overflow: hidden;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 0.875rem;
+      background: var(--moss-900); color: var(--cream-100); padding: 1rem;
+    }
+    @media (min-width: 640px) { .brand { padding: 1rem 1.5rem; } }
+    .brand img { width: 2.75rem; height: 2.75rem; flex: none; }
+    .brand-name { font-family: var(--serif); font-weight: 600; font-size: 1.0625rem; line-height: 1.25; }
+    .brand-sub { font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold-500); }
+
+    .body { padding: 1.5rem 1rem; }
+    @media (min-width: 640px) { .body { padding: 2rem 1.5rem; } }
+
+    .status {
+      display: inline-flex; align-items: center; gap: 0.375rem;
+      border: 1px solid #fecaca; background: var(--danger-50); color: var(--danger-700);
+      border-radius: var(--r-pill); padding: 0.125rem 0.625rem;
+      font-size: 0.75rem; font-weight: 600;
+    }
+    .status svg { width: 0.875rem; height: 0.875rem; }
+    .status.neutral { border-color: var(--cream-300); background: var(--cream-50); color: var(--moss-600); }
+
+    h1 {
+      font-family: var(--serif); font-weight: 700; font-size: 1.75rem; line-height: 1.2;
+      margin: 0.75rem 0 0.375rem;
+    }
+    @media (min-width: 640px) { h1 { font-size: 2rem; } }
+    .lead { margin: 0; color: var(--moss-600); }
+
+    .site {
+      margin-top: 1.25rem; padding: 0.875rem 1rem;
+      background: var(--cream-50); border: 1px solid var(--cream-300); border-radius: var(--r-action);
+    }
+    .label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--moss-500); }
+    .site-host { font-size: 1.25rem; font-weight: 700; overflow-wrap: anywhere; margin-top: 0.125rem; }
+    .site-url { font-family: var(--mono); font-size: 0.8125rem; color: var(--moss-600); overflow-wrap: anywhere; margin-top: 0.25rem; }
+
+    dl.facts { margin: 1.25rem 0 0; display: grid; grid-template-columns: 1fr; border-top: 1px solid var(--cream-200); }
+    .fact { display: grid; grid-template-columns: 1fr; gap: 0.125rem; padding: 0.75rem 0; border-bottom: 1px solid var(--cream-200); }
+    @media (min-width: 480px) { .fact { grid-template-columns: 9rem 1fr; gap: 1rem; align-items: baseline; } }
+    .fact dt { font-size: 0.875rem; color: var(--moss-500); }
+    .fact dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; min-height: 1.5rem; }
+    .fact dd.mono { font-family: var(--mono); font-size: 0.8125rem; font-weight: 400; }
+    .chip {
+      display: inline-block; border-radius: var(--r-pill); padding: 0.0625rem 0.625rem; margin: 0 0.25rem 0.25rem 0;
+      background: var(--gold-50); border: 1px solid #f3dc94; color: var(--gold-700); font-size: 0.875rem;
+    }
+    .muted { color: var(--moss-500); font-weight: 400; }
+    .skeleton {
+      display: inline-block; width: 9rem; height: 1rem; vertical-align: middle; border-radius: var(--r-control);
+      background: linear-gradient(90deg, var(--cream-200), var(--cream-50), var(--cream-200)); background-size: 200% 100%;
+      animation: shimmer 1.2s ease-in-out infinite;
+    }
+    @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+    @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
+    .notice {
+      margin-top: 1.25rem; padding: 0.75rem 1rem; border-radius: var(--r-action);
+      border: 1px solid var(--cream-300); background: var(--cream-50); color: var(--moss-800); font-size: 0.875rem;
+    }
+
+    .actions { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.5rem; }
+    @media (min-width: 480px) { .actions { flex-direction: row; } }
+    button {
+      font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+      border-radius: var(--r-action); padding: 0.625rem 1rem; min-height: 2.75rem;
+      transition: background-color 150ms, border-color 150ms;
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    }
+    button svg { width: 1rem; height: 1rem; }
+    .primary { background: var(--moss-900); color: #fff; border: 1px solid var(--moss-900); }
+    .primary:hover { background: var(--moss-800); }
+    .secondary { background: var(--surface); color: var(--moss-900); border: 1px solid var(--cream-300); }
+    .secondary:hover { background: var(--cream-50); border-color: var(--moss-500); }
+    .help { margin: 1.25rem 0 0; font-size: 0.875rem; color: var(--moss-600); }
+    footer { margin-top: 1.25rem; font-size: 0.75rem; color: var(--moss-500); text-align: center; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <header class="brand">
+      <img src="/__blockpage/cspb-logo.png" alt="Colegio de San Pascual Baylon logo" width="44" height="44">
+      <div>
+        <div class="brand-name">Colegio de San Pascual Baylon</div>
+        <div class="brand-sub">Network protection</div>
+      </div>
+    </header>
+
+    <div class="body">
+      <span class="status" id="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/></svg>
+        <span id="status-text">Blocked</span>
+      </span>
+      <h1 id="title">This site is blocked</h1>
+      <p class="lead" id="lead">The school network stopped this page from loading.</p>
+
+      <section class="site" aria-labelledby="site-label">
+        <div class="label" id="site-label">Site you tried to open</div>
+        <div class="site-host" id="host"></div>
+        <div class="site-url" id="url"></div>
+      </section>
+
+      <dl class="facts" aria-live="polite">
+        <div class="fact"><dt>Block type</dt><dd id="block-type"><span class="skeleton"></span><span class="sr-only">Checking</span></dd></div>
+        <div class="fact"><dt>Category</dt><dd id="category"><span class="skeleton"></span></dd></div>
+        <div class="fact" id="list-row"><dt>Filter list</dt><dd id="lists"><span class="skeleton"></span></dd></div>
+        <div class="fact" id="rule-row"><dt>Matched rule</dt><dd class="mono" id="rule"><span class="skeleton"></span></dd></div>
+        <div class="fact"><dt>Your device</dt><dd class="mono" id="client"><span class="skeleton"></span></dd></div>
+        <div class="fact"><dt>Time</dt><dd id="time"></dd></div>
+      </dl>
+
+      <p class="notice" id="notice" hidden></p>
+
+      <div class="actions">
+        <button type="button" class="primary" id="copy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span id="copy-text">Copy details</span>
+        </button>
+        <button type="button" class="secondary" id="back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+          Go back
+        </button>
+      </div>
+
+      <p class="help">Need this site for class or work? Copy the details and send them to the IT office so they can review it.</p>
+    </div>
+  </main>
+  <footer>Filtered by the CSPB school DNS.</footer>
+
+  <script>
+  (function () {
+    var $ = function (id) { return document.getElementById(id); };
+    var set = function (id, text, muted) {
+      var el = $(id);
+      el.textContent = text;
+      if (muted) {
+        el.textContent = '';
+        var span = document.createElement('span');
+        span.className = 'muted';
+        span.textContent = text;
+        el.appendChild(span);
+      }
+    };
+    var fmtTime = function (d) {
+      try {
+        return new Intl.DateTimeFormat('en-PH', {
+          timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short'
+        }).format(d) + ' PHT';
+      } catch (e) { return d.toString(); }
+    };
+
+    var host = location.hostname;
+    var url = location.href;
+    set('host', host);
+    set('url', url);
+    set('time', fmtTime(new Date()));
+    document.title = host + ' blocked · CSPB';
+
+    var details = { site: url, blockType: '', category: '', lists: '', rule: '', device: '', time: $('time').textContent };
+
+    function showNotice(text) { var n = $('notice'); n.textContent = text; n.hidden = false; }
+
+    function unavailable(message) {
+      ['block-type', 'category', 'lists', 'rule'].forEach(function (id) { set(id, 'Unavailable', true); });
+      showNotice(message);
+    }
+
+    function render(d) {
+      if (d.clientIp) { set('client', d.clientIp); details.device = d.clientIp; } else { set('client', 'Unknown', true); }
+      if (d.checkedAt) { var t = new Date(d.checkedAt); if (!isNaN(t)) { set('time', fmtTime(t)); details.time = $('time').textContent; } }
+
+      if (d.error) {
+        unavailable(d.error === 'lookup_unconfigured'
+          ? 'Block details are not configured on this server. The site is still blocked.'
+          : 'Block details could not be loaded right now. The site is still blocked.');
+        return;
+      }
+
+      if (!d.blocked) {
+        var s = $('status'); s.classList.add('neutral'); $('status-text').textContent = 'Not blocked now';
+        $('title').textContent = 'This site is not blocked now';
+        $('lead').textContent = 'It was blocked when your device last looked it up. It may have been allowed since.';
+        set('block-type', d.blockType || 'Not blocked');
+        set('category', 'None', true);
+        $('list-row').hidden = true; $('rule-row').hidden = true;
+        showNotice('Wait a minute, then reload the page. Your device may still remember the old answer.');
+        details.blockType = 'Not blocked now';
+        return;
+      }
+
+      set('block-type', d.blockType || 'Blocked'); details.blockType = d.blockType || '';
+
+      var cat = $('category'); cat.textContent = '';
+      var cats = (d.category || '').split(', ').filter(Boolean);
+      if (cats.length) {
+        cats.forEach(function (c) { var chip = document.createElement('span'); chip.className = 'chip'; chip.textContent = c; cat.appendChild(chip); });
+      } else { set('category', 'Not specified', true); }
+      details.category = d.category || '';
+
+      if (d.lists && d.lists.length) { set('lists', d.lists.join(', ')); details.lists = d.lists.join(', '); }
+      else if (d.service) { set('lists', 'Blocked services'); details.lists = 'Blocked services'; }
+      else { $('list-row').hidden = true; }
+
+      if (d.rule) { set('rule', d.rule); details.rule = d.rule; } else { $('rule-row').hidden = true; }
+    }
+
+    var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 6000);
+    fetch('/__blockpage/info', { cache: 'no-store', signal: ctrl ? ctrl.signal : undefined })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(render)
+      .catch(function () {
+        set('client', 'Unknown', true);
+        unavailable('Block details could not be loaded right now. The site is still blocked.');
+      })
+      .then(function () { clearTimeout(timer); });
+
+    $('back').addEventListener('click', function () {
+      if (history.length > 1) history.back(); else location.href = 'about:blank';
+    });
+
+    $('copy').addEventListener('click', function () {
+      var text = [
+        'Blocked site: ' + details.site,
+        'Block type: ' + (details.blockType || 'unknown'),
+        'Category: ' + (details.category || 'unknown'),
+        details.lists ? 'Filter list: ' + details.lists : null,
+        details.rule ? 'Matched rule: ' + details.rule : null,
+        'Device: ' + (details.device || 'unknown'),
+        'Time: ' + details.time
+      ].filter(Boolean).join('\n');
+      var done = function () {
+        $('copy-text').textContent = 'Copied';
+        setTimeout(function () { $('copy-text').textContent = 'Copy details'; }, 2000);
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, function () { fallback(text); done(); });
+      } else { fallback(text); done(); }
+    });
+
+    function fallback(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  })();
+  </script>
+</body>
+</html>
