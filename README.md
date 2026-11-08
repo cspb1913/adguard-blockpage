@@ -92,6 +92,11 @@ blockpage ── check_host ──▶ AdGuard API (10.116.192.41:3000)
 - One replica, 1m CPU request. The host-less Ingress makes the block page
   ingress-nginx's default server, so it receives every request whose host has no
   Ingress of its own. It only accepts LAN source ranges.
+- Requests that arrive through Cloudflare (they carry `CF-Ray`, `CF-Connecting-IP`
+  or `CDN-Loop: cloudflare`, which clients cannot strip) get a plain 404 and no
+  AdGuard lookup. The cluster trusts forwarded headers, so a public tunnel
+  hostname with no Ingress could otherwise reach this default server and forge
+  its way past the LAN allowlist.
 - HTTPS requests to blocked sites reach ingress-nginx's default certificate and
   fail at once, as described above.
 - Credentials live in the Secret `adguard-blockpage` (keys `username`,

@@ -268,7 +268,18 @@ def make_handler(client: AdGuardClient | None, trust_proxy: bool, proxy_ips=DEFA
         def do_HEAD(self):
             self.do_GET()
 
+        def _via_cloudflare(self) -> bool:
+            # Cloudflare adds these to every request it proxies and clients
+            # cannot remove them. LAN clients reach us directly, so a request
+            # carrying them came from the internet through a tunnel, where a
+            # forged X-Forwarded-For could pass the ingress LAN allowlist.
+            if self.headers.get("CF-Ray") or self.headers.get("CF-Connecting-IP"):
+                return True
+            return "cloudflare" in self.headers.get("CDN-Loop", "").lower()
+
         def do_GET(self):
+            if self._via_cloudflare():
+                return self._send(404, b"Not found\n", "text/plain; charset=utf-8")
             path = urllib.parse.urlsplit(self.path).path
             if path == INFO_PATH:
                 return self._info()

@@ -135,6 +135,16 @@ class BlockPageTest(unittest.TestCase):
         finally:
             srv.shutdown()
 
+    def test_requests_through_cloudflare_get_404_and_no_lookup(self):
+        for hdr in ({"CF-Ray": "8a1b2c3d4e5f-SIN"}, {"CF-Connecting-IP": "203.0.113.9"}, {"CDN-Loop": "cloudflare"}):
+            for path in ("/", server.INFO_PATH):
+                with self.subTest(hdr=hdr, path=path):
+                    before = len(FakeAdGuard.seen)
+                    status, _, body = self.get(self.page, path, "bet.example", {**hdr, "X-Forwarded-For": "10.1.2.3"})
+                    self.assertEqual(status, 404)
+                    self.assertNotIn(b"html", body)
+                    self.assertEqual(len(FakeAdGuard.seen), before)
+
     def test_logo_asset_is_served(self):
         status, headers, body = self.get(self.page, "/__blockpage/cspb-logo.png", "bet.example")
         self.assertEqual(status, 200)
