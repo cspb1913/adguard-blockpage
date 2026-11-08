@@ -16,8 +16,8 @@ Standard library only. Configuration comes from the environment:
   ADGUARD_PASSWORD_FILE  alternative to ADGUARD_PASSWORD
   BLOCKPAGE_LISTEN   host:port to bind (default 0.0.0.0:8080)
   BLOCKPAGE_TRUST_PROXY  "1" to take the client IP from X-Forwarded-For
-  BLOCKPAGE_PROXY_IPS    comma-separated proxy IPs allowed to set it
-                         (default 127.0.0.1,::1)
+  BLOCKPAGE_PROXY_IPS    comma-separated proxy IPs or CIDRs allowed to set it
+                         (default 127.0.0.1,::1; in the cluster, the pod CIDR)
 """
 
 from __future__ import annotations
@@ -193,6 +193,26 @@ def describe(result: dict, lists: dict[int, str], services: dict[str, str]) -> d
     }
 
 
+def parse_networks(spec: str) -> tuple:
+    """Parse "10.0.0.1, 172.16.0.0/16" into ip_network objects."""
+    return tuple(ipaddress.ip_network(s.strip(), strict=False) for s in spec.split(",") if s.strip())
+
+
+def in_networks(ip: str, networks) -> bool:
+    try:
+        addr = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+    return any(addr in net for net in networks)
+
+
+DEFAULT_PROXIES = parse_networks("127.0.0.1,::1")
+# Blocked ads, scripts and images also land here. Only a top-level page (or a
+# frame) gets the HTML; everything else gets a tiny reply and no AdGuard lookup.
+PAGE_DESTS = {"", "document", "iframe", "frame"}
+TINY_BODY = b"Blocked by the CSPB school network.\n"
+
+
 def load_config() -> dict:
     password = os.environ.get("ADGUARD_PASSWORD", "")
     pw_file = os.environ.get("ADGUARD_PASSWORD_FILE")
@@ -204,13 +224,13 @@ def load_config() -> dict:
         "password": password,
         "listen": os.environ.get("BLOCKPAGE_LISTEN", "0.0.0.0:8080"),
         "trust_proxy": os.environ.get("BLOCKPAGE_TRUST_PROXY") == "1",
-        "proxy_ips": frozenset(
-            ip.strip() for ip in os.environ.get("BLOCKPAGE_PROXY_IPS", "127.0.0.1,::1").split(",") if ip.strip()
-        ),
+        "proxy_ips": parse_networks(os.environ.get("BLOCKPAGE_PROXY_IPS", "127.0.0.1,::1")),
     }
 
 
-def make_handler(client: AdGuardClient | None, trust_proxy: bool, proxy_ips: frozenset[str] = frozenset({"127.0.0.1", "::1"})):
+def make_handler(client: AdGuardClient | None, trust_proxy: bool, proxy_ips=DEFAULT_PROXIES):
+    if not isinstance(proxy_ips, tuple):
+        proxy_ips = parse_networks(",".join(proxy_ips))
     page = (PUBLIC_DIR / "index.html").read_bytes()
 
     class Handler(BaseHTTPRequestHandler):
@@ -224,7 +244,7 @@ def make_handler(client: AdGuardClient | None, trust_proxy: bool, proxy_ips: fro
             peer = self.client_address[0]
             # Only a listed proxy may name the client, and only its own entry
             # (the rightmost) counts: earlier entries come from the client.
-            if trust_proxy and peer in proxy_ips:
+            if trust_proxy and in_networks(peer, proxy_ips):
                 # A proxy may append its own header line, so read them all.
                 fwd = ",".join(self.headers.get_all("X-Forwarded-For") or [])
                 last = fwd.split(",")[-1].strip()
@@ -257,6 +277,9 @@ def make_handler(client: AdGuardClient | None, trust_proxy: bool, proxy_ips: fro
                 if name in ASSETS:
                     return self._send(200, (PUBLIC_DIR / name).read_bytes(), ASSETS[name], "public, max-age=86400")
             # Every other path on every host is the block page.
+            dest = self.headers.get("Sec-Fetch-Dest", "").lower()
+            if dest not in PAGE_DESTS:
+                return self._send(403, TINY_BODY, "text/plain; charset=utf-8")
             self._send(403, page, "text/html; charset=utf-8")
 
         do_POST = do_GET

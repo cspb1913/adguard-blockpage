@@ -113,6 +113,28 @@ class BlockPageTest(unittest.TestCase):
         self.assertIn("text/html", headers["Content-Type"])
         self.assertIn(b"This site is blocked", body)
 
+    def test_subresource_requests_get_a_tiny_reply(self):
+        for dest in ("script", "image", "style", "empty"):
+            with self.subTest(dest=dest):
+                status, headers, body = self.get(self.page, "/ad.js", "ads.example", {"Sec-Fetch-Dest": dest})
+                self.assertEqual(status, 403)
+                self.assertIn("text/plain", headers["Content-Type"])
+                self.assertNotIn(b"<html", body)
+
+    def test_navigation_and_frames_get_the_page(self):
+        for dest in ("document", "iframe"):
+            with self.subTest(dest=dest):
+                _, _, body = self.get(self.page, "/", "bet.example", {"Sec-Fetch-Dest": dest})
+                self.assertIn(b"This site is blocked", body)
+
+    def test_proxy_list_accepts_cidrs(self):
+        srv = serve(server.make_handler(None, trust_proxy=True, proxy_ips=server.parse_networks("127.0.0.0/8")))
+        try:
+            _, _, body = self.get(srv, server.INFO_PATH, "bet.example", {"X-Forwarded-For": "10.123.210.9"})
+            self.assertEqual(json.loads(body)["clientIp"], "10.123.210.9")
+        finally:
+            srv.shutdown()
+
     def test_logo_asset_is_served(self):
         status, headers, body = self.get(self.page, "/__blockpage/cspb-logo.png", "bet.example")
         self.assertEqual(status, 200)

@@ -64,49 +64,57 @@ proxy with a school CA installed on every device.
 | `ADGUARD_PASSWORD` / `ADGUARD_PASSWORD_FILE` | | Its password, never logged |
 | `BLOCKPAGE_LISTEN` | `0.0.0.0:8080` | Bind address |
 | `BLOCKPAGE_TRUST_PROXY` | `0` | `1` to read the client IP from `X-Forwarded-For` |
-| `BLOCKPAGE_PROXY_IPS` | `127.0.0.1,::1` | Proxies allowed to set it; only their rightmost entry is used |
+| `BLOCKPAGE_PROXY_IPS` | `127.0.0.1,::1` | Proxy IPs or CIDRs allowed to set it; only the rightmost entry is used |
 
-AdGuard has no read-only role, so give the block page its own AdGuard user
-(`users:` in `AdGuardHome.yaml`) rather than the admin account, and keep the
-env file mode 600. The info endpoint only ever looks up the request's own
-`Host`, and rejects anything that is not a hostname.
+AdGuard has no read-only role, so the block page uses its own AdGuard user
+rather than the admin account. The info endpoint only looks up the request's own
+`Host` and rejects anything that is not a hostname.
 
-## Deploy
+Blocked ads, scripts and images also arrive here. Requests whose
+`Sec-Fetch-Dest` is not a document or frame get a one-line plain-text 403 with no
+AdGuard lookup, so tracker traffic stays cheap.
 
-Requirements: Python 3.9+ (standard library only), port 80 free on the chosen IP.
+## Deploy (prod)
 
-```bash
-sudo cp -r . /opt/adguard-blockpage
-sudo install -m 600 deploy/adguard-blockpage.env.example /etc/adguard-blockpage.env   # then edit
-sudo cp deploy/adguard-blockpage.service /etc/systemd/system/
-sudo systemctl daemon-reload && sudo systemctl enable --now adguard-blockpage
+CI builds `ghcr.io/cspb1913/adguard-blockpage:sha-<commit>` and `:latest` on every
+push to `main` after the tests pass, and smoke-tests the pushed image.
+
+Prod runs in the on-prem cluster through the `tf-gke` GitOps repo
+(`charts/school`, `blockpage:` in `values-onprem-cspb.yaml`). A merge to tf-gke
+`master` deploys it. Releasing a new image means bumping the tag there.
+
+```
+LAN client ── DNS ──▶ AdGuard (10.116.192.41)  blocked → 10.116.192.245
+LAN client ── HTTP ─▶ ingress-nginx VIP 10.116.192.245 ── no matching host ──▶ blockpage
+blockpage ── check_host ──▶ AdGuard API (10.116.192.41:3000)
 ```
 
-Or with Docker: `docker build -t adguard-blockpage .` and run it with the same
-environment variables, publishing port 80 to 8080.
+- One replica, 1m CPU request. The host-less Ingress makes the block page
+  ingress-nginx's default server, so it receives every request whose host has no
+  Ingress of its own. It only accepts LAN source ranges.
+- HTTPS requests to blocked sites reach ingress-nginx's default certificate and
+  fail at once, as described above.
+- Credentials live in the Secret `adguard-blockpage` (keys `username`,
+  `password`), created out of band in namespace `cspb`.
 
-Then point AdGuard at it (Settings → DNS settings → Blocking mode → Custom IP, or
-in `AdGuardHome.yaml` with AdGuard stopped):
+AdGuard settings (`AdGuardHome.yaml`, edited with AdGuard stopped):
 
 ```yaml
 dns:
   blocking_mode: custom_ip
-  blocking_ipv4: 10.116.192.41   # the block page's IPv4
-  blocking_ipv6: "::"            # or the block page's IPv6
-  # Safe browsing and parental answers use these hosts, not blocking_mode.
-  # Not yet tested with an IP literal here; confirm with dig after the change.
-  safebrowsing_block_host: 10.116.192.41
-  parental_block_host: 10.116.192.41
+  blocking_ipv4: 10.116.192.245
+  blocking_ipv6: "::"
 ```
 
 Check it from a LAN client:
 
 ```bash
-dig @10.116.192.41 tinder.com +short        # → 10.116.192.41
-curl -s -H 'Host: tinder.com' http://10.116.192.41/__blockpage/info
+dig @10.116.192.41 <blocked domain> +short    # → 10.116.192.245
+curl -s -H 'Host: <blocked domain>' http://10.116.192.245/__blockpage/info
 ```
 
-Clients cache DNS answers, so a device may take a few minutes to see the change.
+Clients cache DNS answers, so a device may take a few minutes to see a change.
+To roll back, set `blocking_mode: default` again.
 
 ## Development
 
